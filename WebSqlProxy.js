@@ -92,19 +92,15 @@ Ext.define('App.ux.WebSqlProxy', {
         this.initConfig(config);
         this.callParent(arguments);
 
-        p = this;
-        //this.checkDependencies();
-
         //          deprecated
         //        this.addEvents('dbopen', 'updatedb', 'exception', 'cleardb', 'initialDataInserted', 'noWebDb');
 
-        //this.initialize();
     },
 
 
     updateModel : function () {
-        //        console.log(arguments, 'updateModel')
         this.checkDependencies();
+        this.initialize();
         this.callParent();
     },
 
@@ -122,12 +118,10 @@ Ext.define('App.ux.WebSqlProxy', {
 
         //take care of the table
         db.transaction(function (tx) {
-            //            console.log(me.getReader(), me.getPkField(), pk);
             pk = me.getPkField() || (me.getReader() && me.getReader().getIdProperty()) || pk;
             me.setPkField(pk);
 
             var createTable = function () {
-                console.log('creating table', 'CREATE TABLE IF NOT EXISTS ' + me.getDbTable() + '(' + pk + ' ' + me.getPkType() + ', ' + me.constructFields() + ')');
                 tx.executeSql('CREATE TABLE IF NOT EXISTS ' +
                     me.getDbTable() + '(' + pk + ' ' + me.getPkType() + ', ' + me.constructFields() + ')',
                     [],
@@ -277,7 +271,6 @@ Ext.define('App.ux.WebSqlProxy', {
         var records = [],
             me = this,
             finishReading = function (record) {
-                console.log('callback finish reading', record);
                 me.readCallback(operation, record);
 
                 if (typeof callback == 'function') {
