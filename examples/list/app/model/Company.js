@@ -6,7 +6,7 @@ Ext.define('App.model.Company', {
     config   : {
         proxy  : {
             type        : 'websql',
-            dbName      : 'companies',
+            dbName      : 'companies64',
             dbTable     : 'company',
             dbVersion   : '1.22',
             writer      : {
