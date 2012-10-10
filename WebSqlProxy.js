@@ -8,7 +8,13 @@
  *
  * Version: 0.2
  *
- * TODO: respect sorters, filters, start and limit options on the Operation; failover option for remote proxies, ..
+ * TODO:
+ *      respect sorters,
+ *      filters,
+ *      start and limit options on the Operation;
+ *      failover option for remote proxies,
+ *      database version migration
+ *      ...
  */
 Ext.define('App.ux.WebSqlProxy', {
     extend : 'Ext.data.proxy.Proxy',
@@ -85,6 +91,18 @@ Ext.define('App.ux.WebSqlProxy', {
     initialDataCount : 0,
 
     /**
+     * Tracks changes when websql is filled with data for the first time
+     * Makes sure store reloads when data is introduced
+     * Values:
+     *  undefined - initial value
+     *  true - data being loaded
+     *  false - data loaded
+     *  2 - reader called for the second time, store.load()
+     *  3 - operation finished, store.load() will not be called again
+     */
+    pendingChanges : undefined,
+
+    /**
      * Creates the proxy, throws an error if local storage is not supported in the current browser.
      * @param {Object} config (optional) Config object.
      */
@@ -122,6 +140,7 @@ Ext.define('App.ux.WebSqlProxy', {
             me.setPkField(pk);
 
             var createTable = function () {
+                me.pendingChanges = true;
                 tx.executeSql('CREATE TABLE IF NOT EXISTS ' +
                     me.getDbTable() + '(' + pk + ' ' + me.getPkType() + ', ' + me.constructFields() + ')',
                     [],
@@ -141,7 +160,6 @@ Ext.define('App.ux.WebSqlProxy', {
      */
     constructFields : function () {
         //        var m = this.getFields();
-        p = this;
         var me = this,
             m = me.getModel(),
             fields = m.prototype.fields.items,
@@ -209,7 +227,9 @@ Ext.define('App.ux.WebSqlProxy', {
     addData : function (newData, clearFirst) {
         var me = this,
             model = me.getModel().getName(),
-            data = newData || me.getInitialData();
+            data = newData || me.getInitialData(),
+            records = [],
+            record;
 
         //clear objectStore first
         if (clearFirst === true) {
@@ -226,8 +246,12 @@ Ext.define('App.ux.WebSqlProxy', {
         me.insertingInitialData = true;
 
         Ext.each(data, function (entry) {
-            Ext.ModelManager.create(entry, model).save();
-        })
+            record = Ext.ModelManager.create(entry, model);
+            record.save();
+            records.push(record);
+        });
+
+        me.pendingChanges = false;
     },
 
     /**
@@ -245,6 +269,7 @@ Ext.define('App.ux.WebSqlProxy', {
         });
         return data;
     },
+
     //inherit docs
     create           : function (operation, callback, scope) {
         var records = operation.records,
@@ -270,11 +295,24 @@ Ext.define('App.ux.WebSqlProxy', {
     read             : function (operation, callback, scope) {
         var records = [],
             me = this,
+            store = scope,
             finishReading = function (record) {
+                if (me.pendingChanges === 2) {
+                    if (store && store.isStore === true) {
+                        store.load();
+                    }
+                    me.pendingChanges = 3;
+                }
+
                 me.readCallback(operation, record);
 
                 if (typeof callback == 'function') {
                     callback.call(scope || this, operation);
+
+                    if (me.pendingChanges === false) {
+                        me.pendingChanges = 2;
+                        me.read(operation, callback, scope);
+                    }
                 }
             };
 
