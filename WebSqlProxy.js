@@ -169,7 +169,7 @@ Ext.define('App.ux.WebSqlProxy', {
             var name = f.getName(),
                 type = f.getType().type;
 
-            if (name.toLowerCase() !== 'id') {
+            if (name.toLowerCase() !== me.getPkField().toLowerCase()) {
                 type = type.replace(/int/i, 'INTEGER')
                     .replace(/string/i, 'TEXT')
                     .replace(/auto/i, 'TEXT')
@@ -272,7 +272,7 @@ Ext.define('App.ux.WebSqlProxy', {
 
     //inherit docs
     create           : function (operation, callback, scope) {
-        var records = operation.records,
+        var records = operation.getRecords(),
             length = records.length,
             id, record, i;
 
@@ -548,7 +548,7 @@ Ext.define('App.ux.WebSqlProxy', {
         var me = this;
 
         me.getDb().transaction(function (tx) {
-            tx.executeSql('DELETE FROM ' + me.getDbTable + ' WHERE ' + me.getPkField() + ' = ?',
+            tx.executeSql('DELETE FROM ' + me.getDbTable() + ' WHERE ' + me.getPkField() + ' = ?',
                 [id],
                 Ext.emptyFn, //on success
                 Ext.bind(me.onError, me));        // on error
