@@ -202,7 +202,7 @@ Ext.define('Ext.data.proxy.WebSql', {
      * @param {Array} args
      * @param {Function} fail
      * @param {Object} scope
-     * @throws CM.Exception
+     * @throws {Object} Exception
      */
     queryError: function (transaction, error, query, args, fail, scope) {
         if (Ext.isFunction(fail)) {
@@ -211,10 +211,10 @@ Ext.define('Ext.data.proxy.WebSql', {
         //<debug>
         console.log('QUERY_ERROR: ', error, query, args);
         //</debug>
-        throw Ext.create('CM.Exception', {
+        throw {
             code: 'websql_error',
             message: "SQL error: " + error.message + "\nSQL query: " + query + (args && args.length ? ("\nSQL params: " + args.join(', ')) : '' )
-        });
+        };
     },
 
     /**
